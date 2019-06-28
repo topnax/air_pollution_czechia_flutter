@@ -106,8 +106,8 @@ class _HomePageState extends State<HomePage> {
               secondary: Icon(Icons.language),
               title: Text("Zobrazit sousední státy"),
               onChanged: (bool value) {
-                loadDataset();
                 _showForeignStates = value;
+                loadDataset();
               },
             ),
           ],
@@ -210,6 +210,7 @@ class _HomePageState extends State<HomePage> {
         this._loading = false;
         this._stations = stations;
         this._markers = getStationMarkers();
+        this._markers = List.from(_markers);
         this._markerClusterLayerOptions = getMarkerClusterLayerOptions();
       });
     } else {
