@@ -1,3 +1,4 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:collection';
 import 'dart:convert' as convert;
 
@@ -8,19 +9,12 @@ import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong/latlong.dart';
 
+import 'bloc/airpollution_bloc.dart';
+import 'bloc/airpollution_state.dart';
 import 'model/Component.dart';
 import 'model/ComponentLegendItem.dart';
 import 'model/Legend.dart';
 
-const APP_VERSION = "0.1";
-const APP_NAME = "air_pollution_cz";
-const MAP_TILES_URL_TEMPLATE =
-    "https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}@2x.png?access_token={accessToken}";
-const MAPBOX_TOKEN =
-    'pk.eyJ1IjoidG9wbmF4IiwiYSI6ImNqd3lwdms1NzB0MWM0NXBtbjYycmpyZ2QifQ.ZacRcqj5LhfmQBy6MlP4ew';
-const MAPBOX_ID = 'mapbox.streets';
-const DATASET_URL =
-    "http://portal.chmi.cz/files/portal/docs/uoco/web_generator/aqindex_cze.json";
 
 void main() => runApp(AirPollutionApp());
 
@@ -45,6 +39,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
+
+  final airPollutionBloc = AirPollutionBloc();
+
   //// List of stations
   List _stations;
 
@@ -79,14 +77,17 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Stack(children: <Widget>[
-        map,
-        _loading
-            ? Container(
-                color: Colors.black54,
-                child: Center(child: CircularProgressIndicator()))
-            : Container()
-      ]),
+      body: BlocBuilder(
+        bloc: airPollutionBloc,
+        builder: (BuildContext context, AirPollutionState state) { Stack(children: <Widget>[
+          map,
+          _loading
+              ? Container(
+                  color: Colors.black54,
+                  child: Center(child: CircularProgressIndicator()))
+              : Container()
+        ]),
+      )},
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           onRefreshTapped();
@@ -218,67 +219,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  List parseStations(jsonResponse) {
-    var requiredKeys = ["Name", "Owner", "Lat", "Lon", "Ix"];
-    var stations = new List();
-    for (int h = 0;
-        h < (_showForeignStates ? jsonResponse["States"].length : 1);
-        h++) {
-      var regions = jsonResponse["States"][h]["Regions"];
-      for (int i = 0; i < regions.length; i++) {
-        var region = regions[i];
-        for (var stationJson in region["Stations"]) {
-          bool failed = false;
-          for (var requiredKey in requiredKeys) {
-            if (!stationJson.containsKey(requiredKey)) {
-              failed = true;
-              break;
-            }
-          }
-          if (failed) {
-            continue;
-          }
 
-          var components = List();
-
-          if (stationJson["Components"] != null) {
-            for (var componentJson in stationJson["Components"]) {
-              var component = Component(componentJson["Code"],
-                  componentJson["Int"], componentJson["Ix"]);
-              if (componentJson["Val"] != null) {
-                component.value = double.tryParse(componentJson["Val"]) ?? 0;
-              }
-              components.add(component);
-            }
-          }
-
-          stations.add(Station(
-              stationJson["Name"],
-              stationJson["Owner"],
-              double.parse(stationJson["Lat"]),
-              double.parse(stationJson["Lon"]),
-              stationJson["Ix"],
-              components));
-        }
-      }
-    }
-    return stations;
-  }
-
-  HashMap parseLegend(jsonResponse) {
-    var legend = HashMap();
-    for (int i = 0; i < jsonResponse["Legend"].length; i++) {
-      var legendJson = jsonResponse["Legend"][i];
-      var legendsItem = LegendItem(legendJson["Ix"],
-          hexToColor("#" + legendJson["Color"]), legendJson["Description"]);
-      legend[legendsItem.ix] = legendsItem;
-    }
-    return legend;
-  }
-
-  Color hexToColor(String code) {
-    return new Color(int.parse(code.substring(1, 7), radix: 16) + 0xFF000000);
-  }
 
   void onStationTapped(Station station, BuildContext context) async {
     setState(() {
@@ -370,15 +311,6 @@ class _HomePageState extends State<HomePage> {
 
   void onRefreshTapped() {
     loadDataset();
-  }
-
-  Map parseComponents(jsonResponse) {
-    var components = Map();
-    for (var componentJson in jsonResponse["Components"]) {
-      components[componentJson["Code"]] = ComponentLegendItem(
-          componentJson["Code"], componentJson["Name"], componentJson["Unit"]);
-    }
-    return components;
   }
 
   String getMaximalIx(List<Marker> markers) {
