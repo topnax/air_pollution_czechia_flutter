@@ -2,119 +2,66 @@ import 'dart:collection';
 import 'dart:convert' as convert;
 import 'dart:async';
 import 'dart:ui';
+import 'package:air_quality_flutter/model/Component.dart';
+import 'package:air_quality_flutter/model/ComponentLegendItem.dart';
 import 'package:air_quality_flutter/model/Station.dart';
+import 'package:air_quality_flutter/services/station_fetcher.dart'
+    as StationFetcher;
 import 'package:bloc/bloc.dart';
 import './bloc.dart';
 import 'package:air_quality_flutter/util/constants.dart';
 import 'airpollution_event.dart';
-import 'package:http/http.dart' as http;
 import 'package:latlong/latlong.dart';
-
+import "package:air_quality_flutter/services/preferences.dart" as preferences;
+import 'package:http/http.dart' as http;
 
 class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
-  @override
-  AirPollutionState get initialState => InitialAirpollutionState();
+  var legend;
+  var componentLegend;
+  List stations;
 
   @override
-  Stream<AirPollutionState> mapEventToState(AirPollutionEvent event,) async* {
+  AirPollutionState get initialState =>
+      InitialAirpollutionState(preferences.getForeignStations);
+
+  @override
+  Stream<AirPollutionState> mapEventToState(
+    AirPollutionEvent event,
+  ) async* {
     if (event is GetAirPollution) {
+      bool showForeignStations = true;
+
+      if (currentState is InitialAirpollutionState) {
+        showForeignStations =
+            (currentState as InitialAirpollutionState).showForeignStations;
+      }
       yield AirPollutionLoading();
 
-      final response = await _loadData();
+      final response = await StationFetcher.loadData();
 
+      yield AirPollutionNoNetwork();
+      print("XOXOXO");
       if (response.statusCode == 200) {
-        yield getLoadedState(response);
+        print("XOXOXO1");
+        yield getLoadedState(response, showForeignStations);
+//        yield AirPollutionLoaded(null, null, null, false);
       } else {
+        print("XOXOXO2");
         yield AirPollutionNoNetwork();
       }
+      print("XOEND");
     }
   }
 
-  Future<http.Response> _loadData() async {
-    Map<String, String> headers = new Map<String, String>();
-    headers["User-Agent"] = "$APP_NAME $APP_VERSION";
-    return http.get(DATASET_URL, headers: headers);
-  }
-
-  getLoadedState(http.Response response) {
+  getLoadedState(http.Response response, bool showForeignStations) {
     var jsonResponse =
-    convert.jsonDecode(convert.utf8.decode(response.bodyBytes));
-    var legend = parseLegend(jsonResponse);
-    var componentLegend = parseComponents(jsonResponse);
-    List stations = parseStations(jsonResponse);
-    return AirPollutionLoaded(stations, legend, componentLegend)
-  }
-
-
-  List parseStations(jsonResponse) {
-    var requiredKeys = ["Name", "Owner", "Lat", "Lon", "Ix"];
-    var stations = new List();
-    for (int h = 0;
-    h < (_showForeignStates ? jsonResponse["States"].length : 1);
-    h++) {
-      var regions = jsonResponse["States"][h]["Regions"];
-      for (int i = 0; i < regions.length; i++) {
-        var region = regions[i];
-        for (var stationJson in region["Stations"]) {
-          bool failed = false;
-          for (var requiredKey in requiredKeys) {
-            if (!stationJson.containsKey(requiredKey)) {
-              failed = true;
-              break;
-            }
-          }
-          if (failed) {
-            continue;
-          }
-
-          var components = List();
-
-          if (stationJson["Components"] != null) {
-            for (var componentJson in stationJson["Components"]) {
-              var component = Component(componentJson["Code"],
-                  componentJson["Int"], componentJson["Ix"]);
-              if (componentJson["Val"] != null) {
-                component.value = double.tryParse(componentJson["Val"]) ?? 0;
-              }
-              components.add(component);
-            }
-          }
-
-          stations.add(Station(
-              stationJson["Name"],
-              stationJson["Owner"],
-              double.parse(stationJson["Lat"]),
-              double.parse(stationJson["Lon"]),
-              stationJson["Ix"],
-              components));
-        }
-      }
-    }
-    return stations;
-  }
-
-  HashMap parseLegend(jsonResponse) {
-    var legend = HashMap();
-    for (int i = 0; i < jsonResponse["Legend"].length; i++) {
-      var legendJson = jsonResponse["Legend"][i];
-      var legendsItem = LegendItem(legendJson["Ix"],
-          hexToColor("#" + legendJson["Color"]), legendJson["Description"]);
-      legend[legendsItem.ix] = legendsItem;
-    }
-    return legend;
-  }
-
-  Map parseComponents(jsonResponse) {
-    var components = Map();
-    for (var componentJson in jsonResponse["Components"]) {
-      components[componentJson["Code"]] = ComponentLegendItem(
-          componentJson["Code"], componentJson["Name"], componentJson["Unit"]);
-    }
-    return components;
-  }
-
-
-  Color hexToColor(String code) {
-    return Color(int.parse(code.substring(1, 7), radix: 16) + 0xFF000000);
+        convert.jsonDecode(convert.utf8.decode(response.bodyBytes));
+    var legend = StationFetcher.parseLegend(jsonResponse);
+    var componentLegend = StationFetcher.parseComponents(jsonResponse);
+    List<Station> stations =
+        StationFetcher.parseStations(jsonResponse, showForeignStations);
+    return AirPollutionLoaded(
+        stations, legend, componentLegend, showForeignStations);
+//            return AirPollutionLoaded(null, null, null, false);
   }
 }

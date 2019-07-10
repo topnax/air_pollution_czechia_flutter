@@ -1,0 +1,2 @@
+
+bool get getForeignStations => false;

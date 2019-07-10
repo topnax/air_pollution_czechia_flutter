@@ -7,7 +7,11 @@ abstract class AirPollutionState extends Equatable {
   AirPollutionState([List props = const []]) : super(props);
 }
 
-class InitialAirpollutionState extends AirPollutionState {}
+class InitialAirpollutionState extends AirPollutionState {
+  bool showForeignStations;
+
+  InitialAirpollutionState(this.showForeignStations) : super([showForeignStations]);
+}
 
 class AirPollutionLoading extends AirPollutionState {}
 
@@ -17,8 +21,8 @@ class AirPollutionLoaded extends AirPollutionState {
   var componentLegend;
   final bool showForeignStations;
 
-  AirPollutionLoaded(this.stations, this.legend, this.componentLegend)
-      : super([stations, legend, componentLegend]);
+  AirPollutionLoaded(this.stations, this.legend, this.componentLegend, this.showForeignStations)
+      : super([stations, legend, componentLegend, showForeignStations]);
 }
 
 class AirPollutionNoNetwork extends AirPollutionState {}

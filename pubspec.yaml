@@ -20,8 +20,17 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_map: any # or the latest version on Pub
-  flutter_map_marker_cluster: any # or the latest version on Pub
+#  flutter_map: any # or the latest version on Pub
+#  flutter_map_marker_cluster: any # or the latest version on Pub
+
+  flutter_map:
+    git:
+      url: https://github.com/johnpryan/flutter_map.git
+      ref: dev
+  flutter_map_marker_cluster:
+    git:
+      url: https://github.com/lpongetti/flutter_map_marker_cluster.git
+      ref: develop
 
   flutter_bloc: ^0.15.1
   equatable: ^0.2.6
