@@ -20,9 +20,14 @@ class AirPollutionLoaded extends AirPollutionState {
   var legend;
   var componentLegend;
   final bool showForeignStations;
+  final bool showDetail;
+  var station;
+  var controller = null;
 
-  AirPollutionLoaded(this.stations, this.legend, this.componentLegend, this.showForeignStations)
-      : super([stations, legend, componentLegend, showForeignStations]);
+  AirPollutionLoaded(this.stations, this.legend, this.componentLegend, this.showForeignStations, this.showDetail, {station: Station})
+      : super([stations, legend, componentLegend, showForeignStations, showDetail, station]){
+    this.station = station;
+  }
 }
 
 class AirPollutionNoNetwork extends AirPollutionState {}

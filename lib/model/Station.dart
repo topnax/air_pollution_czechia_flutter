@@ -5,7 +5,8 @@ class Station {
   int ix;
   bool clicked = false;
   List components;
+  int state;
 
-  Station(this.name, this.owner, this.lat, this.long, this.ix, this.components);
+  Station(this.name, this.owner, this.lat, this.long, this.ix, this.components, this.state);
 
 }

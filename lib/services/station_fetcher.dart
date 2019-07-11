@@ -9,19 +9,22 @@ import 'package:air_quality_flutter/util/constants.dart';
 import 'package:http/http.dart' as http;
 
 
-Future<http.Response> loadData() async {
+Future<http.Response> loadData() {
   Map<String, String> headers = new Map<String, String>();
   headers["User-Agent"] = "$APP_NAME $APP_VERSION";
-  return http.get(DATASET_URL, headers: headers);
+  Future <http.Response> response = http.get(DATASET_URL, headers: headers);
+  print("henlo");
+  return response;
 }
 
-List<Station> parseStations(jsonResponse, showForeignStations) {
+List<Station> parseStations(jsonResponse) {
   var requiredKeys = ["Name", "Owner", "Lat", "Lon", "Ix"];
   var stations = new List<Station>();
-  for (int h = 0;
-      h < (showForeignStations ? jsonResponse["States"].length : 1);
-      h++) {
-    var regions = jsonResponse["States"][h]["Regions"];
+//  for (int h = 0;
+//      h < (showForeignStations ? jsonResponse["States"].length : 1);
+//      h++) {
+  for (int stateIndex = 0; stateIndex < (jsonResponse["States"].length); stateIndex++) {
+    var regions = jsonResponse["States"][stateIndex]["Regions"];
     for (int i = 0; i < regions.length; i++) {
       var region = regions[i];
       for (var stationJson in region["Stations"]) {
@@ -55,7 +58,8 @@ List<Station> parseStations(jsonResponse, showForeignStations) {
             double.parse(stationJson["Lat"]),
             double.parse(stationJson["Lon"]),
             stationJson["Ix"],
-            components));
+            components,
+        stateIndex));
       }
     }
   }

@@ -18,11 +18,11 @@ import 'package:http/http.dart' as http;
 class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
   var legend;
   var componentLegend;
-  List stations;
+  List<Station> stations;
+  var controller = null;
 
   @override
-  AirPollutionState get initialState =>
-      InitialAirpollutionState(preferences.getForeignStations);
+  AirPollutionState get initialState => InitialAirpollutionState(false);
 
   @override
   Stream<AirPollutionState> mapEventToState(
@@ -32,36 +32,72 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
       bool showForeignStations = true;
 
       if (currentState is InitialAirpollutionState) {
-        showForeignStations =
-            (currentState as InitialAirpollutionState).showForeignStations;
+        showForeignStations = await preferences.getForeignStations();
       }
       yield AirPollutionLoading();
 
-      final response = await StationFetcher.loadData();
-
-      yield AirPollutionNoNetwork();
-      print("XOXOXO");
-      if (response.statusCode == 200) {
-        print("XOXOXO1");
-        yield getLoadedState(response, showForeignStations);
-//        yield AirPollutionLoaded(null, null, null, false);
-      } else {
-        print("XOXOXO2");
+      // Await the http get response, then decode the json-formatted response.
+      try {
+        var response = await StationFetcher.loadData();
+        if (response.statusCode == 200) {
+          parseResponse(response);
+          yield AirPollutionLoaded(
+              stations, legend, componentLegend, showForeignStations, false);
+        } else {
+          yield AirPollutionNoNetwork();
+        }
+      } on Exception {
         yield AirPollutionNoNetwork();
       }
-      print("XOEND");
+    }
+
+    if (event is HideStationDetail && currentState is AirPollutionLoaded) {
+      AirPollutionLoaded state = AirPollutionLoaded(
+          stations,
+          legend,
+          componentLegend,
+          currentState is AirPollutionLoaded
+              ? (currentState as AirPollutionLoaded).showForeignStations
+              : false,
+          false);
+      state.controller = (currentState as AirPollutionLoaded).controller;
+      yield state;
+    }
+
+    if (event is ShowStationDetail) {
+      yield AirPollutionLoaded(
+          stations,
+          legend,
+          componentLegend,
+          currentState is AirPollutionLoaded
+              ? (currentState as AirPollutionLoaded).showForeignStations
+              : false,
+          true,
+          station: event.station);
+    }
+
+    if (event is DetailControllerRetrieved && currentState is AirPollutionLoaded){
+      (currentState as AirPollutionLoaded).controller = event.controller;
+    }
+
+    if (event is ForeignStationsToggle) {
+      yield AirPollutionLoaded(
+          stations,
+          legend,
+          componentLegend,
+          event.showForeignStations,
+          currentState is AirPollutionLoaded
+              ? (currentState as AirPollutionLoaded).showDetail
+              : false);
+      preferences.setForeignStations(event.showForeignStations);
     }
   }
 
-  getLoadedState(http.Response response, bool showForeignStations) {
+  void parseResponse(http.Response response) {
     var jsonResponse =
         convert.jsonDecode(convert.utf8.decode(response.bodyBytes));
-    var legend = StationFetcher.parseLegend(jsonResponse);
-    var componentLegend = StationFetcher.parseComponents(jsonResponse);
-    List<Station> stations =
-        StationFetcher.parseStations(jsonResponse, showForeignStations);
-    return AirPollutionLoaded(
-        stations, legend, componentLegend, showForeignStations);
-//            return AirPollutionLoaded(null, null, null, false);
+    this.legend = StationFetcher.parseLegend(jsonResponse);
+    this.componentLegend = StationFetcher.parseComponents(jsonResponse);
+    this.stations = StationFetcher.parseStations(jsonResponse);
   }
 }
