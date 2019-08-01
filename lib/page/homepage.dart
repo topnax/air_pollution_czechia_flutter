@@ -22,12 +22,17 @@ class _HomePageState extends State<HomePage> {
     airPollutionBloc.dispatch(GetAirPollution());
   }
 
+  Widget _buildBar(BuildContext context) {
+    return new AppBar(
+      title: Text("Kvalita ovzduší v ČR"),
+      backgroundColor: Colors.green,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Kvalita ovzduší v ČR"),
-        ),
+        appBar: _buildBar(context),
         body: BlocBuilder(
             bloc: airPollutionBloc,
             builder: (BuildContext context, AirPollutionState state) {
@@ -66,7 +71,7 @@ class _HomePageState extends State<HomePage> {
                     Icon(Icons.signal_cellular_connected_no_internet_4_bar,
                         size: 30),
                     Padding(padding: EdgeInsets.only(top: 10)),
-                    Text("Nelze se připojit k databázi",
+                    Text(state.connectionDisabled ? "Není dostupné připojení k internetu" : "Nelze se připojit k databázi",
                         style: TextStyle(fontSize: 20)),
                   ],
                 )));
@@ -83,47 +88,57 @@ class _HomePageState extends State<HomePage> {
         ),
         drawer: Drawer(
           child: Column(
-            children: [Expanded(
-              child: ListView(
-                children: <Widget>[
-                  UserAccountsDrawerHeader(
-
-                    decoration: BoxDecoration(
-
-                      image: DecorationImage(image: AssetImage('graphics/material_forest.png'),fit: BoxFit.fill)
-                      // ...
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.all(0),
+                  children: <Widget>[
+                    UserAccountsDrawerHeader(
+                      decoration: BoxDecoration(
+                          image: DecorationImage(
+                              image: AssetImage('graphics/material_forest.png'),
+                              fit: BoxFit.fill)
+                          ),
+                      accountName: Text("Další nastavení",
+                          style: TextStyle(fontSize: 18, shadows: [
+                            Shadow(offset: Offset(0.0, 0.0), blurRadius: 5.0)
+                          ])),
                     ),
-                    accountName:
-                        Text("Další nastavení", style: TextStyle(fontSize: 18,shadows: [Shadow(offset: Offset(0.0, 0.0), blurRadius: 5.0)])),
-                  ),
-                  BlocBuilder(
-                      bloc: airPollutionBloc,
-                      builder: (BuildContext context, AirPollutionState state) {
-                        if (state is AirPollutionLoaded) {
-                          return CheckboxListTile(
-                            value: state.showForeignStations,
-                            secondary: Icon(Icons.language),
-                            title: Text("Zobrazit sousední státy"),
-                            onChanged: (bool value) {
-                              airPollutionBloc
-                                  .dispatch(ForeignStationsToggle(value));
-                            },
+                    BlocBuilder(
+                        bloc: airPollutionBloc,
+                        builder:
+                            (BuildContext context, AirPollutionState state) {
+                          if (state is AirPollutionLoaded) {
+                            return CheckboxListTile(
+                              value: state.showForeignStations,
+                              secondary: Icon(Icons.language),
+                              title: Text("Zobrazit sousední státy"),
+                              onChanged: (bool value) {
+                                airPollutionBloc
+                                    .dispatch(ForeignStationsToggle(value));
+                              },
+                            );
+                          }
+                          return Container(
+                            child: Center(child: Text("Nedostupné")),
                           );
-                        }
-                        return Container(
-                          child: Center(child: Text("Nedostupné")),
-                        );
-                      }),
-                ],
+                        }),
+                  ],
+                ),
               ),
-            ),Padding(
-              padding: const EdgeInsets.all(1.0),
-              child: Text("Zdroj dat: ČHMÚ"),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text("Stanislav Král " + DateTime.now().year.toString()),
-            )],
+              Padding(
+                padding: const EdgeInsets.all(1.0),
+                child: Text("Zdroj dat: ČHMÚ"),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(1.0),
+                child: Text("Zdroj map: mapy.cz"),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text("Stanislav Král " + DateTime.now().year.toString()),
+              )
+            ],
           ),
         ));
   }
@@ -140,8 +155,8 @@ void onStationTapped(var _legend, var _componentLegend, Station station,
 
   for (Component component in station.components) {
     if (component.value >= 0) {
-      componentsWidgets.add(InkWell(
-        onTap: () {},
+      componentsWidgets.add(Tooltip(
+        message: _componentLegend[component.code].name,
         child: Chip(
             backgroundColor: _legend.containsKey(component.ix)
                 ? _legend[component.ix].color
@@ -195,7 +210,7 @@ void onStationTapped(var _legend, var _componentLegend, Station station,
                           ),
                         ),
                         Text(_legend[station.ix].description +
-                            " kvalita ovzduší")
+                            (station.ix != 0 ? " kvalita ovzduší" : ""))
                       ],
                     ),
                   ),
@@ -213,14 +228,6 @@ void onStationTapped(var _legend, var _componentLegend, Station station,
           ),
         );
       });
-//
-//  Future.delayed(const Duration(milliseconds: 1000), () {
-//
-//// Here you can write your code
-//    controller.close();
-//
-//
-//  });
 
   bloc.dispatch(DetailControllerRetrieved(controller));
 

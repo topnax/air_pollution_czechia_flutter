@@ -9,6 +9,7 @@ import 'station_marker.dart';
 
 Widget getMap(AirPollutionBloc bloc, [AirPollutionLoaded state]) {
   return FlutterMap(
+    mapController: bloc.mapController,
     options: MapOptions(
         center: LatLng(49.770126, 15.0),
         onTap: (point) => bloc.dispatch(HideStationDetail()),
@@ -20,8 +21,6 @@ Widget getMap(AirPollutionBloc bloc, [AirPollutionLoaded state]) {
       TileLayerOptions(
         urlTemplate: MAP_TILES_URL_TEMPLATE,
         additionalOptions: {
-          'accessToken': MAPBOX_TOKEN,
-          'id': MAPBOX_ID,
         },
       ),
       getMarkerClusterLayerOptions(state, bloc)

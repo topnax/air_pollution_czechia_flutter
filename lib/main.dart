@@ -9,8 +9,16 @@ class AirPollutionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Kvalita vzduchu v ČR',
-      theme: ThemeData.light(),
+      theme: new ThemeData(
+        primarySwatch: Colors.green,
+        primaryTextTheme: TextTheme(
+            title: TextStyle(
+                color: Colors.white
+            )
+        )
+    ),
       home: HomePage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

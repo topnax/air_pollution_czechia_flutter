@@ -1,25 +1,24 @@
-import 'dart:collection';
-import 'dart:convert' as convert;
 import 'dart:async';
-import 'dart:ui';
-import 'package:air_quality_flutter/model/Component.dart';
-import 'package:air_quality_flutter/model/ComponentLegendItem.dart';
+import 'dart:convert' as convert;
+
 import 'package:air_quality_flutter/model/Station.dart';
+import "package:air_quality_flutter/services/preferences.dart" as preferences;
 import 'package:air_quality_flutter/services/station_fetcher.dart'
     as StationFetcher;
 import 'package:bloc/bloc.dart';
-import './bloc.dart';
-import 'package:air_quality_flutter/util/constants.dart';
-import 'airpollution_event.dart';
-import 'package:latlong/latlong.dart';
-import "package:air_quality_flutter/services/preferences.dart" as preferences;
+import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
+
+import './bloc.dart';
+import 'airpollution_event.dart';
 
 class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
   var legend;
   var componentLegend;
   List<Station> stations;
   var controller = null;
+
+  MapController mapController = new MapController();
 
   @override
   AirPollutionState get initialState => InitialAirpollutionState(false);
@@ -44,14 +43,14 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
           yield AirPollutionLoaded(
               stations, legend, componentLegend, showForeignStations, false);
         } else {
-          yield AirPollutionNoNetwork();
+          yield AirPollutionNoNetwork(false);
         }
       } on Exception {
-        yield AirPollutionNoNetwork();
+        yield AirPollutionNoNetwork(true);
       }
     }
 
-    if (event is HideStationDetail && currentState is AirPollutionLoaded) {
+    if (event is HideStationDetail) {
       AirPollutionLoaded state = AirPollutionLoaded(
           stations,
           legend,
@@ -60,7 +59,9 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
               ? (currentState as AirPollutionLoaded).showForeignStations
               : false,
           false);
-      state.controller = (currentState as AirPollutionLoaded).controller;
+      if (currentState is AirPollutionLoaded) {
+        state.controller = (currentState as AirPollutionLoaded).controller;
+      }
       yield state;
     }
 
@@ -76,7 +77,8 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
           station: event.station);
     }
 
-    if (event is DetailControllerRetrieved && currentState is AirPollutionLoaded){
+    if (event is DetailControllerRetrieved &&
+        currentState is AirPollutionLoaded) {
       (currentState as AirPollutionLoaded).controller = event.controller;
     }
 
