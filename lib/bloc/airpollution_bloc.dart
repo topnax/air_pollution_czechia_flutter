@@ -3,8 +3,7 @@ import 'dart:convert' as convert;
 
 import 'package:air_quality_flutter/model/Station.dart';
 import "package:air_quality_flutter/services/preferences.dart" as preferences;
-import 'package:air_quality_flutter/services/station_fetcher.dart'
-    as StationFetcher;
+import 'package:air_quality_flutter/services/station_fetcher.dart' as StationFetcher;
 import 'package:bloc/bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
@@ -16,7 +15,7 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
   var legend;
   var componentLegend;
   List<Station> stations;
-  var controller = null;
+  var bottomSheetController = null;
 
   MapController mapController = new MapController();
 
@@ -40,8 +39,7 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
         var response = await StationFetcher.loadData();
         if (response.statusCode == 200) {
           parseResponse(response);
-          yield AirPollutionLoaded(
-              stations, legend, componentLegend, showForeignStations, false);
+          yield AirPollutionLoaded(stations, legend, componentLegend, showForeignStations, false);
         } else {
           yield AirPollutionNoNetwork(false);
         }
@@ -77,9 +75,8 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
           station: event.station);
     }
 
-    if (event is DetailControllerRetrieved &&
-        currentState is AirPollutionLoaded) {
-      (currentState as AirPollutionLoaded).controller = event.controller;
+    if (event is DetailControllerRetrieved && currentState is AirPollutionLoaded) {
+      (currentState as AirPollutionLoaded).controller = event.bottomSheetController;
     }
 
     if (event is ForeignStationsToggle) {
@@ -96,8 +93,7 @@ class AirPollutionBloc extends Bloc<AirPollutionEvent, AirPollutionState> {
   }
 
   void parseResponse(http.Response response) {
-    var jsonResponse =
-        convert.jsonDecode(convert.utf8.decode(response.bodyBytes));
+    var jsonResponse = convert.jsonDecode(convert.utf8.decode(response.bodyBytes));
     this.legend = StationFetcher.parseLegend(jsonResponse);
     this.componentLegend = StationFetcher.parseComponents(jsonResponse);
     this.stations = StationFetcher.parseStations(jsonResponse);

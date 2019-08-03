@@ -1,9 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-final String SHOW_FOREIGN_STATIONS_KEY = "show_foreign_states";
-final bool DEFAULT_FOREIGN_STATIONS_VALUE = false;
-
-//final bool DEFAULT_SHOW_FOREIGN_STATIONS = false;
+const String SHOW_FOREIGN_STATIONS_KEY = "show_foreign_states";
+const bool DEFAULT_FOREIGN_STATIONS_VALUE = false;
 
 Future<bool> getForeignStations() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();

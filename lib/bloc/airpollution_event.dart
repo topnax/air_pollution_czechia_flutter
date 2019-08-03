@@ -12,8 +12,7 @@ class GetAirPollution extends AirPollutionEvent {}
 class ForeignStationsToggle extends AirPollutionEvent {
   final bool showForeignStations;
 
-  ForeignStationsToggle(this.showForeignStations)
-      : super([showForeignStations]);
+  ForeignStationsToggle(this.showForeignStations) : super([showForeignStations]);
 }
 
 class ShowStationDetail extends AirPollutionEvent {
@@ -27,7 +26,7 @@ class HideStationDetail extends AirPollutionEvent {
 }
 
 class DetailControllerRetrieved extends AirPollutionEvent {
-  var controller;
+  final bottomSheetController;
 
-  DetailControllerRetrieved(this.controller) : super([controller]);
+  DetailControllerRetrieved(this.bottomSheetController) : super([bottomSheetController]);
 }

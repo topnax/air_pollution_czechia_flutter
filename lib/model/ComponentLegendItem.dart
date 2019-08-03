@@ -15,14 +15,7 @@ class ComponentLegendItem {
   String unit;
 
   ComponentLegendItem(code, name, unit) {
-    print(code);
-    print(LABELS.containsKey(code));
-    print(LABELS[code]);
-
-    
     this.code = LABELS.containsKey(code) ? LABELS[code] : code;
-    print(this.code);
-    print("## lel");
     this.name = name;
     this.unit = unit;
   }
